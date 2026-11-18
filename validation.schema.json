@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tenantsage:validation:schema:v1",
+  "title": "Deployment Validation Result",
+  "type": "object",
+
+  "required": [
+    "validator",
+    "deployment_profile",
+    "deployment_decision",
+    "operational_readiness",
+    "governance_conformance",
+    "artifact_scope",
+    "evidence_limitations",
+    "controls"
+  ],
+
+  "properties": {
+
+    "validator": {
+      "type": "string"
+    },
+
+    "deployment_profile": {
+      "type": "string"
+    },
+
+    "deployment_decision": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "READY_WITH_WARNINGS",
+        "NOT_READY"
+      ]
+    },
+
+    "operational_readiness": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "UNVERIFIED"
+      ]
+    },
+
+    "governance_conformance": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "UNVERIFIED"
+      ]
+    },
+
+    "artifact_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "evidence_limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "controls": {
+
+      "type": "array",
+
+      "items": {
+
+        "type": "object",
+
+        "required": [
+          "id",
+          "name",
+          "category",
+          "status",
+          "evidence"
+        ],
+
+        "properties": {
+
+          "id": {
+            "type": "string"
+          },
+
+          "name": {
+            "type": "string"
+          },
+
+          "category": {
+            "type": "string"
+          },
+
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "UNVERIFIED",
+              "NOT_APPLICABLE"
+            ]
+          },
+
+          "required": {
+            "type": "boolean"
+          },
+
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+
+          "impact": {
+            "type": "string"
+          },
+
+          "recommended_verification": {
+            "type": "string"
+          }
+        }
+      }
+    },
+
+    "critical_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+
+    "non_blocking_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+
+  "$defs": {
+
+    "finding": {
+
+      "type": "object",
+
+      "required": [
+        "control",
+        "status",
+        "summary"
+      ],
+
+      "properties": {
+
+        "control": {
+          "type": "string"
+        },
+
+        "status": {
+          "type": "string",
+          "enum": [
+            "FAIL",
+            "UNVERIFIED"
+          ]
+        },
+
+        "summary": {
+          "type": "string"
+        },
+
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "impact": {
+          "type": "string"
+        },
+
+        "recommended_verification": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
