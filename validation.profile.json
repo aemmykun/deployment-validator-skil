@@ -1,0 +1,25 @@
+{
+  "profiles": {
+    "minimal": {
+      "monitoring_required": false,
+      "database_required": false
+    },
+
+    "application": {
+      "monitoring_required": false,
+      "database_required": true
+    },
+
+    "platform": {
+      "monitoring_required": true,
+      "database_required": true
+    },
+
+    "governed-platform": {
+      "monitoring_required": true,
+      "database_required": true,
+      "auditability_required": true,
+      "policy_enforcement_required": true
+    }
+  }
+}
