@@ -1,0 +1,64 @@
+{
+  "01-ready-with-required-fail.json": {
+    "why": "Earlier review case 1: READY while a required control is FAIL.",
+    "expect_keywords": [
+      "const"
+    ]
+  },
+  "02-ready-with-zero-controls.json": {
+    "why": "Earlier review case 2: READY with no controls evaluated (vacuous pass).",
+    "expect_keywords": [
+      "minItems"
+    ]
+  },
+  "03-pass-with-empty-evidence.json": {
+    "why": "Earlier review case 3: PASS with no evidence.",
+    "expect_keywords": [
+      "minItems"
+    ]
+  },
+  "04-unknown-profile-and-extra-key.json": {
+    "why": "Earlier review case 4: unknown profile and an extra top-level key.",
+    "expect_keywords": [
+      "enum",
+      "additionalProperties"
+    ]
+  },
+  "05-missing-impact-and-verification.json": {
+    "why": "Earlier review case 5: control without impact and recommended_verification.",
+    "expect_keywords": [
+      "required"
+    ]
+  },
+  "06-blocking-fail-in-optional-group-not-blocked.json": {
+    "why": "A blocking FAIL (committed secret) in an optional group must still force NOT_READY.",
+    "expect_keywords": [
+      "const"
+    ]
+  },
+  "07-not-applicable-marked-required.json": {
+    "why": "A NOT_APPLICABLE control cannot be required.",
+    "expect_keywords": [
+      "const"
+    ]
+  },
+  "08-not-ready-without-trigger.json": {
+    "why": "NOT_READY must be justified by a required FAIL/UNVERIFIED or a blocking FAIL.",
+    "expect_keywords": [
+      "anyOf",
+      "minItems"
+    ]
+  },
+  "09-governed-platform-skips-governance.json": {
+    "why": "governed-platform must report governance as PASS, FAIL or UNVERIFIED.",
+    "expect_keywords": [
+      "enum"
+    ]
+  },
+  "10-required-but-not-blocking.json": {
+    "why": "Only blocking controls can be required.",
+    "expect_keywords": [
+      "const"
+    ]
+  }
+}

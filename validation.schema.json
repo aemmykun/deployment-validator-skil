@@ -1,30 +1,52 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:tenantsage:validation:schema:v1",
+  "$id": "urn:tenantsage:validation:schema:v1.1",
   "title": "Deployment Validation Result",
+  "description": "Output of the deployment-validator skill. Decision rules are in SKILL.md; the conditionals below enforce them.",
   "type": "object",
-
+  "additionalProperties": false,
   "required": [
     "validator",
     "deployment_profile",
+    "deployment_platforms",
     "deployment_decision",
     "operational_readiness",
     "governance_conformance",
     "artifact_scope",
     "evidence_limitations",
-    "controls"
+    "controls",
+    "critical_findings",
+    "non_blocking_findings"
   ],
-
   "properties": {
-
     "validator": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
-
     "deployment_profile": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "minimal",
+        "application",
+        "platform",
+        "governed-platform"
+      ]
     },
-
+    "deployment_platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "docker-compose",
+          "cloudflare-workers",
+          "vercel",
+          "firebase",
+          "unknown"
+        ]
+      }
+    },
     "deployment_decision": {
       "type": "string",
       "enum": [
@@ -33,7 +55,6 @@
         "NOT_READY"
       ]
     },
-
     "operational_readiness": {
       "type": "string",
       "enum": [
@@ -42,99 +63,42 @@
         "UNVERIFIED"
       ]
     },
-
     "governance_conformance": {
       "type": "string",
       "enum": [
         "PASS",
         "FAIL",
-        "UNVERIFIED"
+        "UNVERIFIED",
+        "NOT_APPLICABLE"
       ]
     },
-
     "artifact_scope": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       }
     },
-
     "evidence_limitations": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       }
     },
-
     "controls": {
-
       "type": "array",
-
+      "minItems": 1,
       "items": {
-
-        "type": "object",
-
-        "required": [
-          "id",
-          "name",
-          "category",
-          "status",
-          "evidence"
-        ],
-
-        "properties": {
-
-          "id": {
-            "type": "string"
-          },
-
-          "name": {
-            "type": "string"
-          },
-
-          "category": {
-            "type": "string"
-          },
-
-          "status": {
-            "type": "string",
-            "enum": [
-              "PASS",
-              "FAIL",
-              "UNVERIFIED",
-              "NOT_APPLICABLE"
-            ]
-          },
-
-          "required": {
-            "type": "boolean"
-          },
-
-          "evidence": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-
-          "impact": {
-            "type": "string"
-          },
-
-          "recommended_verification": {
-            "type": "string"
-          }
-        }
+        "$ref": "#/$defs/control"
       }
     },
-
     "critical_findings": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/finding"
       }
     },
-
     "non_blocking_findings": {
       "type": "array",
       "items": {
@@ -142,25 +106,403 @@
       }
     }
   },
-
+  "allOf": [
+    {
+      "$comment": "Decision rules 1 and 2: a required FAIL/UNVERIFIED or a blocking FAIL forces NOT_READY with at least one critical finding.",
+      "if": {
+        "properties": {
+          "controls": {
+            "anyOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "required": {
+                      "const": true
+                    },
+                    "status": {
+                      "enum": [
+                        "FAIL",
+                        "UNVERIFIED"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "required",
+                    "status"
+                  ]
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "blocking": {
+                      "const": true
+                    },
+                    "status": {
+                      "const": "FAIL"
+                    }
+                  },
+                  "required": [
+                    "blocking",
+                    "status"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "controls"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deployment_decision": {
+            "const": "NOT_READY"
+          },
+          "critical_findings": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "$comment": "NOT_READY must be justified by a rule 1 or 2 trigger.",
+      "if": {
+        "properties": {
+          "deployment_decision": {
+            "const": "NOT_READY"
+          }
+        },
+        "required": [
+          "deployment_decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "controls": {
+            "anyOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "required": {
+                      "const": true
+                    },
+                    "status": {
+                      "enum": [
+                        "FAIL",
+                        "UNVERIFIED"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "required",
+                    "status"
+                  ]
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "blocking": {
+                      "const": true
+                    },
+                    "status": {
+                      "const": "FAIL"
+                    }
+                  },
+                  "required": [
+                    "blocking",
+                    "status"
+                  ]
+                }
+              }
+            ]
+          },
+          "critical_findings": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "$comment": "READY means every applicable control passed.",
+      "if": {
+        "properties": {
+          "deployment_decision": {
+            "const": "READY"
+          }
+        },
+        "required": [
+          "deployment_decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "controls": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "FAIL",
+                      "UNVERIFIED"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          },
+          "critical_findings": {
+            "maxItems": 0
+          },
+          "non_blocking_findings": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "$comment": "READY_WITH_WARNINGS needs at least one non-blocking issue and no critical findings.",
+      "if": {
+        "properties": {
+          "deployment_decision": {
+            "const": "READY_WITH_WARNINGS"
+          }
+        },
+        "required": [
+          "deployment_decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "controls": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "FAIL",
+                    "UNVERIFIED"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          },
+          "critical_findings": {
+            "maxItems": 0
+          },
+          "non_blocking_findings": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "$comment": "governed-platform must assess governance.",
+      "if": {
+        "properties": {
+          "deployment_profile": {
+            "const": "governed-platform"
+          }
+        },
+        "required": [
+          "deployment_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "governance_conformance": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "UNVERIFIED"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Profiles without governance or auditability groups report governance as NOT_APPLICABLE. Kept in sync with validation.profile.json by tools/validate.py.",
+      "if": {
+        "properties": {
+          "deployment_profile": {
+            "enum": [
+              "minimal",
+              "application",
+              "platform"
+            ]
+          }
+        },
+        "required": [
+          "deployment_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "governance_conformance": {
+            "const": "NOT_APPLICABLE"
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
-
-    "finding": {
-
+    "control": {
       "type": "object",
-
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "group",
+        "required",
+        "blocking",
+        "status",
+        "evidence",
+        "impact",
+        "recommended_verification"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "enum": [
+            "runtime",
+            "database",
+            "observability",
+            "security",
+            "governance",
+            "auditability"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL",
+            "UNVERIFIED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "impact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommended_verification": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "$comment": "PASS and FAIL must cite evidence.",
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "PASS",
+                  "FAIL"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "$comment": "A NOT_APPLICABLE control is never required.",
+          "if": {
+            "properties": {
+              "status": {
+                "const": "NOT_APPLICABLE"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "required": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "$comment": "Only blocking controls can be required.",
+          "if": {
+            "properties": {
+              "required": {
+                "const": true
+              }
+            },
+            "required": [
+              "required"
+            ]
+          },
+          "then": {
+            "properties": {
+              "blocking": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
       "required": [
         "control",
         "status",
         "summary"
       ],
-
       "properties": {
-
         "control": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$"
         },
-
         "status": {
           "type": "string",
           "enum": [
@@ -168,22 +510,20 @@
             "UNVERIFIED"
           ]
         },
-
         "summary": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
-
         "evidence": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           }
         },
-
         "impact": {
           "type": "string"
         },
-
         "recommended_verification": {
           "type": "string"
         }
