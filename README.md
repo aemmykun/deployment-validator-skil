@@ -1,4 +1,4 @@
-# deployment-validator
+# deploy-validation-skill
 
 An agent skill that checks whether a deployment is ready, using only the
 artifacts you give it. It returns a JSON verdict of `READY`,
@@ -15,7 +15,7 @@ files it loads. This README only explains the repo to people.
 
 | File | Purpose |
 |------|---------|
-| `SKILL.md` | Entry point: frontmatter, procedure, decision rules, prompt-injection guard |
+| `SKILL.md` | Entry point (skill name `deploy-validation-skill`): frontmatter, procedure, decision rules, prompt-injection guard |
 | `validation.prompt.md` | Evaluator role and evidence handling |
 | `validation.profile.json` | Profiles: required and optional control groups, decision policy |
 | `validation.rules.json` | Control groups, platforms, evidence types and controls |
