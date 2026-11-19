@@ -21,14 +21,16 @@ files it loads. This README only explains the repo to people.
 | `validation.rules.json` | Control groups, platforms, evidence types and controls |
 | `validation.schema.json` | JSON Schema the output must match; it also enforces the decision rules |
 | `examples/valid/` | Golden outputs that must validate |
-| `examples/invalid/` | Outputs that must be rejected; `MANIFEST.json` says why |
+| `examples/invalid/` | Outputs the schema must reject; `MANIFEST.json` says why |
+| `examples/invalid-semantic/` | Schema-valid outputs the rule check must reject |
 | `tools/validate.py` | Offline checks for all of the above |
 
 ## Run the checks
 
 ```sh
 python -m pip install -r requirements-dev.txt
-python tools/validate.py        # add -v to list every check
+python tools/validate.py                    # add -v to list every check
+python tools/validate.py --result out.json  # check one emitted result
 ```
 
 The script checks that:
@@ -38,7 +40,8 @@ The script checks that:
 - `SKILL.md` has frontmatter and every file it names exists
 - profiles, rules and schema agree (every required group has a control)
 - valid examples pass and match the reference decision engine
-- invalid examples fail for the stated reason
+- invalid examples fail for the stated reason, and semantic-invalid ones fail
+  the rule check (applicability, `required` flags, decision)
 
 CI runs the same script on every push to `main` and on every pull request.
 

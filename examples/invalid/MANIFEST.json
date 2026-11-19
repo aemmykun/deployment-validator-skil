@@ -60,5 +60,11 @@
     "expect_keywords": [
       "const"
     ]
+  },
+  "11-truncated-control-list.json": {
+    "why": "READY with only one NOT_APPLICABLE control: every rules control must be listed.",
+    "expect_keywords": [
+      "contains"
+    ]
   }
 }

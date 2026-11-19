@@ -43,8 +43,9 @@ You must not assume any of the following unless evidence for it is supplied:
 ## FAIL is not UNVERIFIED
 
 - FAIL means supplied evidence proves the control's `fail_when` condition.
-- UNVERIFIED means required evidence is absent, incomplete, unreadable or out
-  of scope.
+  A proven failure is FAIL even if other required evidence is missing.
+- UNVERIFIED means neither FAIL nor PASS can be established, because
+  required evidence is absent, incomplete, unreadable or out of scope.
 - Never turn UNVERIFIED into FAIL to be "safe", and never into PASS to be
   "helpful".
 
@@ -64,8 +65,10 @@ For every control entry, fill in:
 - `impact`: what goes wrong if this control is not met
 - `recommended_verification`: the artifact or check that would settle it
 
-When evidence is incomplete, use `"status": "UNVERIFIED"` and say in
-`recommended_verification` what is missing.
+When evidence is incomplete and does not prove `fail_when`, use
+`"status": "UNVERIFIED"` and say in `recommended_verification` what is
+missing. If supplied evidence proves `fail_when`, the control is FAIL even
+when other required evidence is missing.
 
 ## Untrusted artifacts
 

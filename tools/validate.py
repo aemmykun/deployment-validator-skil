@@ -12,7 +12,14 @@ Checks:
      for the reason listed in examples/invalid/MANIFEST.json.
 
 Runs offline with only the standard library and jsonschema.
-Exit code 0 = all checks passed, 1 = at least one failure. Pass -v to list every check.
+  6. examples/invalid-semantic/*.json are schema-valid but must fail the
+     semantic check (applicability, required flags, decision).
+
+Usage:
+  python tools/validate.py              run all repo checks (-v lists every check)
+  python tools/validate.py --result F   check one emitted result F
+
+Exit code 0 = all checks passed, 1 = at least one failure.
 """
 from __future__ import annotations
 
@@ -35,13 +42,14 @@ PROMPT = ROOT / "validation.prompt.md"
 VALID_DIR = ROOT / "examples" / "valid"
 INVALID_DIR = ROOT / "examples" / "invalid"
 MANIFEST = INVALID_DIR / "MANIFEST.json"
+SEMANTIC_DIR = ROOT / "examples" / "invalid-semantic"
 
 OPERATIONAL_GROUPS = {"runtime", "database", "observability", "security"}
 GOVERNANCE_GROUPS = {"governance", "auditability"}
 ISSUE = {"FAIL", "UNVERIFIED"}
 
 VERBOSE = "-v" in sys.argv[1:]
-SUMMARY = re.compile(r"(validates against|is rejected|decision is|meta-valid|frontmatter name)")
+SUMMARY = re.compile(r"(validates against|is rejected|decision is|meta-valid|frontmatter name|is schema-valid)")
 failures: list[str] = []
 passes = 0
 
@@ -127,8 +135,8 @@ def check_cross_file(profile, rules, schema) -> None:
         check(all(ev.get(k) for k in ("type", "pass_when", "fail_when")),
               f"{cid} evaluation has type, pass_when and fail_when")
         check(isinstance(c.get("blocking"), bool), f"{cid} blocking is a boolean")
-        check(re.match(schema["$defs"]["control"]["properties"]["id"]["pattern"], cid) is not None,
-              f"{cid} matches the schema id pattern")
+        check(re.match(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$", cid) is not None and not cid.startswith("COV-"),
+              f"{cid} is a well-formed id outside the reserved COV- prefix")
 
     check("version" in profile and "version" in rules, "profile and rules files carry a version")
     for pname, p in profile["profiles"].items():
@@ -153,6 +161,20 @@ def check_cross_file(profile, rules, schema) -> None:
           "schema control group enum matches validation.rules.json control_groups")
     check(set(props["deployment_platforms"]["items"]["enum"]) == platforms | {"unknown"},
           "schema platform enum matches validation.rules.json platforms (+ unknown)")
+
+    rule_ids = [c["id"] for c in controls]
+    contains_ids = [r["contains"]["properties"]["id"]["const"] for r in props["controls"].get("allOf", [])]
+    check(contains_ids == rule_ids, "schema requires every rules control id in controls (contains list in sync)")
+    id_any = schema["$defs"]["control"]["properties"]["id"]["anyOf"]
+    check(id_any[0]["enum"] == rule_ids, "schema control id enum matches validation.rules.json")
+    check(id_any[1]["pattern"] == "^COV-(" + "|".join(g.upper() for g in rules["control_groups"]) + ")$",
+          "schema COV- pattern matches control groups")
+    check(schema["$defs"]["finding"]["properties"]["control"]["anyOf"] == id_any,
+          "schema finding control ids match control ids")
+    for c in controls:
+        if "applies_when" in c:
+            check(isinstance(c["applies_when"], str) and len(c["applies_when"]) > 10,
+                  f"{c['id']} applies_when is a non-empty condition")
 
     no_gov = sorted(n for n, p in profile["profiles"].items()
                     if not (set(p["requires"]) | set(p["optional"])) & GOVERNANCE_GROUPS)
@@ -203,47 +225,66 @@ def sub_result(controls, groups):
     return "PASS"
 
 
-def check_semantics(doc, profile, rules, label) -> None:
+def semantic_problems(doc, profile, rules) -> list[str]:
+    """Return every way an emitted result breaks the SKILL.md rules that the
+    schema cannot express. Empty list = semantically valid."""
+    problems: list[str] = []
+
+    def need(ok: bool, message: str) -> None:
+        if not ok:
+            problems.append(message)
+
+    if doc.get("deployment_profile") not in profile["profiles"]:
+        return [f"unknown profile {doc.get('deployment_profile')!r}"]
     exp, req_groups = expected_controls(profile, rules, doc["deployment_profile"], doc["deployment_platforms"])
+    rmap = {c["id"]: c for c in rules["controls"]}
     got = doc["controls"]
+    ids = [c["id"] for c in got]
+    need(len(ids) == len(set(ids)), "control ids are not unique")
     rule_ids = [c["id"] for c in rules["controls"]]
-    got_rule_ids = [c["id"] for c in got if not c["id"].startswith("COV-")]
-    check(got_rule_ids == rule_ids, f"{label}: one entry per rules control, in file order")
+    need([i for i in ids if not i.startswith("COV-")] == rule_ids,
+         "controls must list every rules control once, in file order")
     for c in got:
         if c["id"].startswith("COV-"):
             g = c["id"][4:].lower()
-            check(g in req_groups and c["group"] == g and c["required"] and c["blocking"]
-                  and c["status"] == "UNVERIFIED", f"{label}: {c['id']} is a valid coverage entry")
+            need(g in req_groups and c["group"] == g and c["required"] and c["blocking"]
+                 and c["status"] == "UNVERIFIED", f"{c['id']} is not a valid coverage entry")
             continue
         e = exp.get(c["id"])
         if e is None:
             continue
-        check(c["group"] == e["group"] and c["blocking"] == e["blocking"],
-              f"{label}: {c['id']} group/blocking copied from rules")
+        need(c["group"] == e["group"] and c["blocking"] == e["blocking"],
+             f"{c['id']}: group/blocking must be copied from the rules file")
         if e["applicable"]:
-            check(c["status"] != "NOT_APPLICABLE", f"{label}: {c['id']} is applicable, not NOT_APPLICABLE")
-            check(c["required"] == e["required"], f"{label}: {c['id']} required flag")
+            if c["status"] == "NOT_APPLICABLE":
+                need(bool(rmap[c["id"]].get("applies_when")) and bool(c["evidence"]),
+                     f"{c['id']}: applicable for this profile/platform; NOT_APPLICABLE is only "
+                     "allowed for an applies_when control with evidence that the condition is false")
+            else:
+                need(c["required"] == e["required"], f"{c['id']}: required should be {e['required']}")
         else:
-            check(c["status"] == "NOT_APPLICABLE" and not c["required"],
-                  f"{label}: {c['id']} is NOT_APPLICABLE for this profile/platform")
+            need(c["status"] == "NOT_APPLICABLE" and not c["required"],
+                 f"{c['id']}: must be NOT_APPLICABLE for this profile/platform")
     for g in sorted(req_groups):
-        has = any(c["group"] == g and c["required"] for c in got)
-        check(has, f"{label}: required group {g} has a required control or COV entry")
+        need(any(c["group"] == g and c["required"] for c in got),
+             f"required group {g} has no required control and no COV-{g.upper()} entry")
 
     decision, critical, warnings = decide(got)
-    check(doc["deployment_decision"] == decision, f"{label}: decision is {decision}")
-    check(sorted(f["control"] for f in doc["critical_findings"]) == sorted(critical),
-          f"{label}: critical_findings match rule 1/2 triggers")
-    check(sorted(f["control"] for f in doc["non_blocking_findings"]) == sorted(warnings),
-          f"{label}: non_blocking_findings match rule 3 triggers")
-    check(doc["operational_readiness"] == sub_result(got, OPERATIONAL_GROUPS),
-          f"{label}: operational_readiness")
+    need(doc["deployment_decision"] == decision, f"deployment_decision should be {decision}")
+    need(sorted(f["control"] for f in doc["critical_findings"]) == sorted(critical),
+         f"critical_findings should be {sorted(critical)}")
+    need(sorted(f["control"] for f in doc["non_blocking_findings"]) == sorted(warnings),
+         f"non_blocking_findings should be {sorted(warnings)}")
+    status = {c["id"]: c["status"] for c in got}
+    for f in doc["critical_findings"] + doc["non_blocking_findings"]:
+        need(status.get(f["control"]) == f["status"], f"finding {f['control']} status differs from its control")
+    op = sub_result(got, OPERATIONAL_GROUPS)
+    need(doc["operational_readiness"] == op, f"operational_readiness should be {op}")
     p = profile["profiles"][doc["deployment_profile"]]
-    if (set(p["requires"]) | set(p["optional"])) & GOVERNANCE_GROUPS:
-        check(doc["governance_conformance"] == sub_result(got, GOVERNANCE_GROUPS),
-              f"{label}: governance_conformance")
-    else:
-        check(doc["governance_conformance"] == "NOT_APPLICABLE", f"{label}: governance_conformance")
+    gov = (sub_result(got, GOVERNANCE_GROUPS)
+           if (set(p["requires"]) | set(p["optional"])) & GOVERNANCE_GROUPS else "NOT_APPLICABLE")
+    need(doc["governance_conformance"] == gov, f"governance_conformance should be {gov}")
+    return problems
 
 
 # --------------------------------------------------------- 5. examples
@@ -264,7 +305,20 @@ def check_examples(schema, profile, rules) -> None:
             for e in errors[:5]:
                 print(f"      {list(e.absolute_path)}: {e.message}")
             continue
-        check_semantics(doc, profile, rules, label)
+        decision = doc.get("deployment_decision")
+        problems = semantic_problems(doc, profile, rules)
+        check(not problems, f"{label}: semantics match SKILL.md, decision is {decision}")
+        for msg in problems:
+            print(f"      {msg}")
+
+    for path in sorted(SEMANTIC_DIR.glob("*.json")):
+        label = f"examples/invalid-semantic/{path.name}"
+        doc = load_json(path)
+        if doc is None:
+            continue
+        check(not list(validator.iter_errors(doc)), f"{label} is schema-valid (so only semantics can catch it)")
+        problems = semantic_problems(doc, profile, rules)
+        check(bool(problems), f"{label} is rejected by the semantic check ({problems[0] if problems else 'accepted'})")
 
     manifest = load_json(MANIFEST) or {}
     check(set(manifest) == {p.name for p in invalid},
@@ -288,7 +342,32 @@ def check_examples(schema, profile, rules) -> None:
               f"{label} is rejected for the expected reason {sorted(expected)} (saw {sorted(seen)})")
 
 
+def check_result(path: Path) -> int:
+    """Validate one emitted result: schema plus the SKILL.md semantics."""
+    schema, profile, rules = load_json(SCHEMA), load_json(PROFILE), load_json(RULES)
+    doc = load_json(path)
+    if None in (schema, profile, rules, doc):
+        return 1
+    errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(doc), key=str)
+    for e in errors:
+        print(f"schema: {list(e.absolute_path)}: {e.message}")
+    problems = [] if errors else semantic_problems(doc, profile, rules)
+    for msg in problems:
+        print(f"rules:  {msg}")
+    if errors or problems:
+        print(f"\n{path}: INVALID ({len(errors)} schema error(s), {len(problems)} rule error(s))")
+        return 1
+    print(f"{path}: valid ({doc['deployment_decision']})")
+    return 0
+
+
 def main() -> int:
+    args = sys.argv[1:]
+    if "--result" in args:
+        i = args.index("--result")
+        if i + 1 >= len(args):
+            sys.exit("usage: validate.py --result <result.json>")
+        return check_result(Path(args[i + 1]))
     check_parse()
     schema, profile, rules = load_json(SCHEMA), load_json(PROFILE), load_json(RULES)
     if None in (schema, profile, rules):

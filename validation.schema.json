@@ -91,7 +91,348 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/control"
-      }
+      },
+      "$comment": "Every control in validation.rules.json must appear. Kept in sync by tools/validate.py.",
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-003"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-DOCKER-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-DOCKER-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-DOCKER-003"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-CF-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-VERCEL-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "RUN-FIREBASE-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DB-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DB-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DB-FIREBASE-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "OBS-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "OBS-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "OBS-DOCKER-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "OBS-DOCKER-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SEC-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SEC-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SEC-003"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SEC-004"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "GOV-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "GOV-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "GOV-003"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "AUD-001"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "AUD-002"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "AUD-003"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      ]
     },
     "critical_findings": {
       "type": "array",
@@ -376,7 +717,41 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$"
+          "anyOf": [
+            {
+              "enum": [
+                "RUN-001",
+                "RUN-002",
+                "RUN-003",
+                "RUN-DOCKER-001",
+                "RUN-DOCKER-002",
+                "RUN-DOCKER-003",
+                "RUN-CF-001",
+                "RUN-VERCEL-001",
+                "RUN-FIREBASE-001",
+                "DB-001",
+                "DB-002",
+                "DB-FIREBASE-001",
+                "OBS-001",
+                "OBS-002",
+                "OBS-DOCKER-001",
+                "OBS-DOCKER-002",
+                "SEC-001",
+                "SEC-002",
+                "SEC-003",
+                "SEC-004",
+                "GOV-001",
+                "GOV-002",
+                "GOV-003",
+                "AUD-001",
+                "AUD-002",
+                "AUD-003"
+              ]
+            },
+            {
+              "pattern": "^COV-(RUNTIME|DATABASE|OBSERVABILITY|SECURITY|GOVERNANCE|AUDITABILITY)$"
+            }
+          ]
         },
         "name": {
           "type": "string",
@@ -501,7 +876,41 @@
       "properties": {
         "control": {
           "type": "string",
-          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$"
+          "anyOf": [
+            {
+              "enum": [
+                "RUN-001",
+                "RUN-002",
+                "RUN-003",
+                "RUN-DOCKER-001",
+                "RUN-DOCKER-002",
+                "RUN-DOCKER-003",
+                "RUN-CF-001",
+                "RUN-VERCEL-001",
+                "RUN-FIREBASE-001",
+                "DB-001",
+                "DB-002",
+                "DB-FIREBASE-001",
+                "OBS-001",
+                "OBS-002",
+                "OBS-DOCKER-001",
+                "OBS-DOCKER-002",
+                "SEC-001",
+                "SEC-002",
+                "SEC-003",
+                "SEC-004",
+                "GOV-001",
+                "GOV-002",
+                "GOV-003",
+                "AUD-001",
+                "AUD-002",
+                "AUD-003"
+              ]
+            },
+            {
+              "pattern": "^COV-(RUNTIME|DATABASE|OBSERVABILITY|SECURITY|GOVERNANCE|AUDITABILITY)$"
+            }
+          ]
         },
         "status": {
           "type": "string",

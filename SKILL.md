@@ -47,17 +47,32 @@ Follow these steps in order.
    exactly one entry per control:
    - **Not applicable**: the control's `group` is in neither `requires` nor
      `optional` of the profile, or none of the control's `platforms` matches
-     (`"any"` always matches). Status `NOT_APPLICABLE`, `required: false`.
+     (`"any"` always matches). Status `NOT_APPLICABLE`, `required: false`,
+     empty `evidence`.
+   - **Not applicable by `applies_when`**: the control has an `applies_when`
+     condition and supplied evidence shows the condition is false (for
+     example `firebase.json` deploys only hosting, so Firestore rules do not
+     apply). Status `NOT_APPLICABLE`, `required: false`, and `evidence` must
+     cite the artifact that shows it. If the evidence cannot show whether the
+     condition holds, treat the control as applicable.
    - **Applicable**: everything else. Set `required: true` when the group is in
      the profile's `requires` **and** the control has `"blocking": true`;
      otherwise `required: false`. Copy `blocking` from the rules file.
 6. **Evaluate** each applicable control against its `required_evidence` and
    `evaluation.pass_when` / `evaluation.fail_when`, using only supplied
    evidence:
-   - `PASS`: supplied evidence shows `pass_when` holds. Cite it.
-   - `FAIL`: supplied evidence shows `fail_when` holds. Cite it.
-   - `UNVERIFIED`: any required evidence is missing, partial, unreadable or out
-     of scope, or the evidence shows neither condition.
+   - `FAIL`: supplied evidence shows `fail_when` holds. Cite it. **A proven
+     failure wins**: it is FAIL even when other required evidence is missing
+     (for example a literal credential in a supplied file fails `SEC-001`
+     even without a scan report).
+   - `PASS`: all of the control's `required_evidence` is supplied, it shows
+     `pass_when` holds, and nothing supplied shows `fail_when`. Cite it.
+   - `UNVERIFIED`: neither of the above can be established, because
+     required evidence is missing, partial, unreadable or out of scope, or the
+     evidence shows neither condition.
+   - Judge each control on all supplied evidence, not only the evidence types
+     it lists. One artifact can prove failures in several controls (a key
+     committed in config fails both `SEC-001` and `SEC-002`).
 7. **Coverage rule.** If a group in the profile's `requires` ends up with no
    applicable control that has `required: true`, add a control entry with id
    `COV-<GROUP>` (group name in upper case, e.g. `COV-DATABASE`), name
@@ -66,6 +81,12 @@ Follow these steps in order.
 8. **Decide** using the decision rules below.
 9. **Emit** a single JSON object that validates against
    `validation.schema.json`. No prose or Markdown before or after it.
+10. **Self-check.** If you can run Python, save the result to a file and run
+    `python tools/validate.py --result <file>` from this skill's directory.
+    It checks the schema and the rules above (complete control set,
+    applicability, `required` flags, decision, findings, sub-results). Fix
+    every failure before returning. The schema alone cannot check
+    profile- and platform-based applicability.
 
 ## Status values
 
@@ -74,7 +95,7 @@ Follow these steps in order.
 | `PASS` | Supplied evidence demonstrates compliance. `evidence` must be non-empty. |
 | `FAIL` | Supplied evidence demonstrates non-compliance. `evidence` must be non-empty. |
 | `UNVERIFIED` | Required evidence is absent, incomplete or out of scope. Never convert UNVERIFIED into FAIL or PASS. |
-| `NOT_APPLICABLE` | The profile or platform does not call for this control. |
+| `NOT_APPLICABLE` | The profile or platform does not call for this control, or supplied evidence shows its `applies_when` condition is false. |
 
 ## Decision rules
 

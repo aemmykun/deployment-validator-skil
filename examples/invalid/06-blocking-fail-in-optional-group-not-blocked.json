@@ -16,7 +16,7 @@
     ".github/workflows/ci.yml"
   ],
   "evidence_limitations": [
-    "No observability config, health route source, auth config or dependency scanning config supplied."
+    "No observability config, health route source, auth config, dependency scanning config or secret scan report supplied."
   ],
   "controls": [
     {
@@ -226,9 +226,9 @@
       "group": "security",
       "required": false,
       "blocking": true,
-      "status": "PASS",
+      "status": "FAIL",
       "evidence": [
-        ".gitignore:1 \u2014 .env ignored"
+        "config/settings.js:4 \u2014 secret set as a literal in committed config, not injected at deploy time"
       ],
       "impact": "If not met: Secrets are set as plain config vars in a committed file, or env files with secrets are committed.",
       "recommended_verification": "Re-check: Secrets are referenced from the platform secret store or environment, and local env files are gitignored."
@@ -332,6 +332,15 @@
         "config/settings.js:4 \u2014 STRIPE_KEY = \"[REDACTED]\" (literal live-format key)"
       ],
       "recommended_verification": "Re-check: A secret scan over the scoped files reports no findings, and no literal credentials appear in the supplied files."
+    },
+    {
+      "control": "SEC-002",
+      "status": "FAIL",
+      "summary": "Secrets injected at deploy time: evidence shows non-compliance.",
+      "evidence": [
+        "config/settings.js:4 \u2014 secret set as a literal in committed config, not injected at deploy time"
+      ],
+      "recommended_verification": "Re-check: Secrets are referenced from the platform secret store or environment, and local env files are gitignored."
     },
     {
       "control": "OBS-001",

@@ -261,7 +261,9 @@
       "platforms": [
         "firebase"
       ],
+      "applies_when": "Supplied artifacts show Firestore is in use: firebase.json has a firestore target, or supplied source code uses the Firestore SDK.",
       "required_evidence": [
+        "firebase_config",
         "firestore_rules"
       ],
       "evaluation": {
