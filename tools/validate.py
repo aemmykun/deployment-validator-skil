@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline checks for deploy-validation-skill.
+"""Offline checks for deployment-validator-skill.
 
 Checks:
   1. Every JSON file in the repo parses.
@@ -91,8 +91,8 @@ def check_skill_md() -> None:
         return
     front = m.group(1)
     name = re.search(r"^name:\s*(\S+)\s*$", front, re.M)
-    check(name is not None and name.group(1) == "deploy-validation-skill",
-          "SKILL.md frontmatter name is deploy-validation-skill")
+    check(name is not None and name.group(1) == "deployment-validator-skill",
+          "SKILL.md frontmatter name is deployment-validator-skill")
     desc = re.search(r"^description:\s*(.+?)(?=^\w+:|\Z)", front, re.M | re.S)
     desc_text = desc.group(1) if desc else ""
     check(len(desc_text.strip()) > 40, "SKILL.md frontmatter has a description")

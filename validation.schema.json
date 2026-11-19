@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:tenantsage:validation:schema:v1.1",
   "title": "Deployment Validation Result",
-  "description": "Output of deploy-validation-skill. Decision rules are in SKILL.md; the conditionals below enforce them.",
+  "description": "Output of deployment-validator-skill. Decision rules are in SKILL.md; the conditionals below enforce them.",
   "type": "object",
   "additionalProperties": false,
   "required": [

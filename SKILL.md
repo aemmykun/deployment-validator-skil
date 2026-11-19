@@ -1,5 +1,5 @@
 ---
-name: deploy-validation-skill
+name: deployment-validator-skill
 description: >-
   Evidence-only deployment readiness and governance check. Use when someone asks
   whether a deployment, release, service or repo is ready to deploy, asks for a
@@ -11,7 +11,7 @@ description: >-
   validation.schema.json. Do not use for writing or fixing code.
 ---
 
-# deploy-validation-skill
+# deployment-validator-skill
 
 This file is the entry point. Everything you need to run the validator is in
 this file and the files it tells you to load. Do not rely on README.md.
