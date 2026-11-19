@@ -1,25 +1,45 @@
 {
+  "version": "1.0",
   "profiles": {
     "minimal": {
-      "monitoring_required": false,
-      "database_required": false
+      "description": "Single-process application with no database. Runtime must be proven; observability and security are checked when evidence is supplied.",
+      "requires": ["runtime"],
+      "optional": ["observability", "security"],
+      "decision_policy": {
+        "unverified_required_blocks": true,
+        "fail_required_blocks": true,
+        "fail_blocking_blocks": true
+      }
     },
-
     "application": {
-      "monitoring_required": false,
-      "database_required": true
+      "description": "Application with a database.",
+      "requires": ["runtime", "database"],
+      "optional": ["observability", "security"],
+      "decision_policy": {
+        "unverified_required_blocks": true,
+        "fail_required_blocks": true,
+        "fail_blocking_blocks": true
+      }
     },
-
     "platform": {
-      "monitoring_required": true,
-      "database_required": true
+      "description": "Production platform with a database and monitoring.",
+      "requires": ["runtime", "database", "observability"],
+      "optional": ["security"],
+      "decision_policy": {
+        "unverified_required_blocks": true,
+        "fail_required_blocks": true,
+        "fail_blocking_blocks": true
+      }
     },
-
     "governed-platform": {
-      "monitoring_required": true,
-      "database_required": true,
-      "auditability_required": true,
-      "policy_enforcement_required": true
+      "description": "Governance-first platform: production platform plus security, policy enforcement and auditability.",
+      "requires": ["runtime", "database", "observability", "security", "governance", "auditability"],
+      "optional": [],
+      "decision_policy": {
+        "unverified_required_blocks": true,
+        "fail_required_blocks": true,
+        "fail_blocking_blocks": true
+      }
     }
   }
 }

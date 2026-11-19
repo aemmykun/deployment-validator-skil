@@ -1,0 +1,521 @@
+{
+  "version": "1.0",
+  "control_groups": {
+    "runtime": {
+      "description": "The deployment target is identified and its deployment configuration is valid."
+    },
+    "database": {
+      "description": "Database schema changes and connections are controlled."
+    },
+    "observability": {
+      "description": "Logs, metrics and health signals are configured."
+    },
+    "security": {
+      "description": "Secrets, authentication and dependency hygiene."
+    },
+    "governance": {
+      "description": "Policy is enforced fail-closed at runtime and changes are controlled."
+    },
+    "auditability": {
+      "description": "Audit records are durable, tamper-evident and free of secrets."
+    }
+  },
+  "platforms": {
+    "docker-compose": {
+      "description": "Containers defined in docker-compose.yml / compose.yaml."
+    },
+    "cloudflare-workers": {
+      "description": "Cloudflare Workers defined in wrangler.toml / wrangler.json(c)."
+    },
+    "vercel": {
+      "description": "Vercel project (vercel.json and/or a framework build in package.json)."
+    },
+    "firebase": {
+      "description": "Firebase project defined in firebase.json / .firebaserc."
+    }
+  },
+  "evidence_types": {
+    "deployment_config": "Platform deployment config: compose file, wrangler.toml/json, vercel.json, firebase.json, or equivalent.",
+    "compose_file": "docker-compose.yml / compose.yaml contents.",
+    "wrangler_config": "wrangler.toml or wrangler.json(c) contents.",
+    "vercel_config": "vercel.json and/or package.json build scripts.",
+    "firebase_config": "firebase.json and .firebaserc contents.",
+    "package_manifest": "package.json, pyproject.toml, requirements.txt or equivalent.",
+    "lockfile": "package-lock.json, pnpm-lock.yaml, yarn.lock, poetry.lock, uv.lock or equivalent.",
+    "ci_workflow": "CI/CD workflow files (e.g. .github/workflows/*.yml).",
+    "migration_files": "Versioned database migration files.",
+    "database_config": "Config or code that builds database connections.",
+    "firestore_rules": "firestore.rules contents.",
+    "observability_config": "Logging/metrics config (e.g. wrangler [observability], Vercel log drains, Prometheus config, Cloud Logging setup).",
+    "prometheus_config": "prometheus.yml or scrape config.",
+    "grafana_config": "Grafana provisioning or dashboard files.",
+    "health_endpoint": "Source or config defining a health/readiness endpoint.",
+    "repository_files": "The supplied repository files that are in scope.",
+    "secret_scan_report": "Output of a secret scanner run over the scoped files.",
+    "secret_config": "How secrets are injected: platform secret bindings, env var references, .gitignore entries for env files.",
+    "auth_config": "Authentication/authorization middleware or config and the routes it covers.",
+    "dependency_scan_config": "Dependabot, CodeQL, npm audit, pip-audit or similar config.",
+    "deny_by_default_policy": "Policy source showing the default decision is deny.",
+    "failure_path": "Code showing what happens when the policy engine or a dependency errors.",
+    "policy_source": "Policy definitions (e.g. OPA/Rego, Cedar, allowlists, RLS policies).",
+    "enforcement_code_path": "Code showing the policy is evaluated before the governed action executes.",
+    "branch_protection_export": "Exported branch protection / ruleset settings.",
+    "audit_storage": "Schema or config of where audit records are stored.",
+    "write_protection": "Evidence that audit records cannot be updated or deleted (grants, triggers, WORM/append-only settings).",
+    "audit_write_code": "Code that builds and writes audit records.",
+    "audit_integrity": "Hash chain, signature or checksum mechanism over audit records."
+  },
+  "controls": [
+    {
+      "id": "RUN-001",
+      "name": "Deployment target identified",
+      "group": "runtime",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "deployment_config"
+      ],
+      "evaluation": {
+        "type": "presence",
+        "pass_when": "At least one supported platform config is supplied and parses, and it names the service being deployed.",
+        "fail_when": "The supplied deployment config does not parse, or it targets a different service or platform than the one being validated."
+      },
+      "blocking": true
+    },
+    {
+      "id": "RUN-002",
+      "name": "Dependencies locked",
+      "group": "runtime",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "package_manifest",
+        "lockfile"
+      ],
+      "evaluation": {
+        "type": "presence",
+        "pass_when": "Every supplied package manifest has a matching committed lockfile.",
+        "fail_when": "A supplied package manifest has no lockfile, or the lockfile is listed in .gitignore."
+      },
+      "blocking": false
+    },
+    {
+      "id": "RUN-003",
+      "name": "Deploy gated by CI",
+      "group": "runtime",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "ci_workflow"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "The deploy job runs only after build and test jobs succeed.",
+        "fail_when": "The deploy job can run without the build/test jobs succeeding (no needs/if gate, or tests are allowed to fail)."
+      },
+      "blocking": false
+    },
+    {
+      "id": "RUN-DOCKER-001",
+      "name": "Compose file valid",
+      "group": "runtime",
+      "platforms": [
+        "docker-compose"
+      ],
+      "required_evidence": [
+        "compose_file"
+      ],
+      "evaluation": {
+        "type": "syntax",
+        "pass_when": "The compose file parses and every service has an image or build.",
+        "fail_when": "The compose file does not parse, or a service has neither image nor build."
+      },
+      "blocking": true
+    },
+    {
+      "id": "RUN-DOCKER-002",
+      "name": "Container images pinned",
+      "group": "runtime",
+      "platforms": [
+        "docker-compose"
+      ],
+      "required_evidence": [
+        "compose_file"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Every image reference has an explicit tag other than latest, or a digest.",
+        "fail_when": "An image has no tag or uses the latest tag."
+      },
+      "blocking": false
+    },
+    {
+      "id": "RUN-DOCKER-003",
+      "name": "Container health checks",
+      "group": "runtime",
+      "platforms": [
+        "docker-compose"
+      ],
+      "required_evidence": [
+        "compose_file"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Every long-running service defines a healthcheck.",
+        "fail_when": "A long-running service has no healthcheck."
+      },
+      "blocking": false
+    },
+    {
+      "id": "RUN-CF-001",
+      "name": "Wrangler config valid",
+      "group": "runtime",
+      "platforms": [
+        "cloudflare-workers"
+      ],
+      "required_evidence": [
+        "wrangler_config"
+      ],
+      "evaluation": {
+        "type": "syntax",
+        "pass_when": "The wrangler config parses and sets name, main and compatibility_date.",
+        "fail_when": "The wrangler config does not parse, or name, main or compatibility_date is missing."
+      },
+      "blocking": true
+    },
+    {
+      "id": "RUN-VERCEL-001",
+      "name": "Vercel build defined",
+      "group": "runtime",
+      "platforms": [
+        "vercel"
+      ],
+      "required_evidence": [
+        "vercel_config"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "vercel.json (if present) parses and a build is defined (buildCommand, a framework preset, or a build script in package.json).",
+        "fail_when": "vercel.json does not parse, or no build is defined."
+      },
+      "blocking": true
+    },
+    {
+      "id": "RUN-FIREBASE-001",
+      "name": "Firebase config valid",
+      "group": "runtime",
+      "platforms": [
+        "firebase"
+      ],
+      "required_evidence": [
+        "firebase_config"
+      ],
+      "evaluation": {
+        "type": "syntax",
+        "pass_when": "firebase.json parses, defines the deployed targets (hosting, functions, firestore, etc.), and .firebaserc maps a project alias.",
+        "fail_when": "firebase.json does not parse, defines no deploy targets, or no project alias is mapped."
+      },
+      "blocking": true
+    },
+    {
+      "id": "DB-001",
+      "name": "Versioned migrations",
+      "group": "database",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "migration_files"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Schema changes are in ordered, versioned migration files.",
+        "fail_when": "Schema is changed outside migrations (e.g. ad-hoc DDL in app startup) or migration ordering conflicts."
+      },
+      "blocking": true
+    },
+    {
+      "id": "DB-002",
+      "name": "Database credentials not hard-coded",
+      "group": "database",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "database_config"
+      ],
+      "evaluation": {
+        "type": "static_analysis",
+        "pass_when": "Database connection settings come from environment variables, secret bindings or a secret manager.",
+        "fail_when": "A literal password, key or full connection string with credentials appears in the supplied files."
+      },
+      "blocking": true
+    },
+    {
+      "id": "DB-FIREBASE-001",
+      "name": "Firestore rules not open",
+      "group": "database",
+      "platforms": [
+        "firebase"
+      ],
+      "applies_when": "Supplied artifacts show Firestore is in use: firebase.json has a firestore target, or supplied source code uses the Firestore SDK.",
+      "required_evidence": [
+        "firebase_config",
+        "firestore_rules"
+      ],
+      "evaluation": {
+        "type": "static_analysis",
+        "pass_when": "Firestore rules restrict reads and writes by auth and/or ownership on every match block.",
+        "fail_when": "A match block allows read or write unconditionally (e.g. if true) or only by a date check."
+      },
+      "blocking": true
+    },
+    {
+      "id": "OBS-001",
+      "name": "Logging enabled for the platform",
+      "group": "observability",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "observability_config"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Logging/telemetry is enabled in config for each identified platform (e.g. wrangler [observability] enabled = true, Vercel log drain, Prometheus scrape, Cloud Logging).",
+        "fail_when": "Config explicitly disables logging/telemetry for a deployed service."
+      },
+      "blocking": true
+    },
+    {
+      "id": "OBS-002",
+      "name": "Health endpoint defined",
+      "group": "observability",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "health_endpoint"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "A health or readiness endpoint is defined for each deployed service.",
+        "fail_when": "A deployed service has no health or readiness endpoint."
+      },
+      "blocking": false
+    },
+    {
+      "id": "OBS-DOCKER-001",
+      "name": "Prometheus monitoring",
+      "group": "observability",
+      "platforms": [
+        "docker-compose"
+      ],
+      "required_evidence": [
+        "prometheus_config"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "A Prometheus scrape config targets the deployed services.",
+        "fail_when": "Prometheus config is supplied but does not target the deployed services."
+      },
+      "blocking": true
+    },
+    {
+      "id": "OBS-DOCKER-002",
+      "name": "Grafana monitoring",
+      "group": "observability",
+      "platforms": [
+        "docker-compose"
+      ],
+      "required_evidence": [
+        "grafana_config"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Grafana provisioning includes a data source for the Prometheus instance and at least one dashboard.",
+        "fail_when": "Grafana provisioning is supplied but has no data source or no dashboard."
+      },
+      "blocking": false
+    },
+    {
+      "id": "SEC-001",
+      "name": "No committed secrets",
+      "group": "security",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "repository_files",
+        "secret_scan_report"
+      ],
+      "evaluation": {
+        "type": "static_analysis",
+        "pass_when": "A secret scan over the scoped files reports no findings, and no literal credentials appear in the supplied files.",
+        "fail_when": "A literal credential (API key, token, password, private key) appears in a supplied file or the scan reports a finding."
+      },
+      "blocking": true
+    },
+    {
+      "id": "SEC-002",
+      "name": "Secrets injected at deploy time",
+      "group": "security",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "secret_config"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Secrets are referenced from the platform secret store or environment, and local env files are gitignored.",
+        "fail_when": "Secrets are set as plain config vars in a committed file, or env files with secrets are committed."
+      },
+      "blocking": true
+    },
+    {
+      "id": "SEC-003",
+      "name": "Authentication enforced",
+      "group": "security",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "auth_config"
+      ],
+      "evaluation": {
+        "type": "static_analysis",
+        "pass_when": "Every non-public route or tool passes authentication/authorization before its handler runs.",
+        "fail_when": "A non-public route or tool is reachable without authentication."
+      },
+      "blocking": true
+    },
+    {
+      "id": "SEC-004",
+      "name": "Dependency vulnerability scanning",
+      "group": "security",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "dependency_scan_config",
+        "ci_workflow"
+      ],
+      "evaluation": {
+        "type": "configuration",
+        "pass_when": "Dependency scanning is configured (e.g. Dependabot, CodeQL, npm audit or pip-audit in CI).",
+        "fail_when": "Dependency scanning is configured but disabled or set to never fail."
+      },
+      "blocking": false
+    },
+    {
+      "id": "GOV-001",
+      "name": "Fail-closed enforcement",
+      "group": "governance",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "deny_by_default_policy",
+        "failure_path"
+      ],
+      "evaluation": {
+        "type": "governance",
+        "pass_when": "The default decision is deny and errors in the policy path deny the action.",
+        "fail_when": "The default decision is allow, or an error in the policy path lets the action proceed."
+      },
+      "blocking": true
+    },
+    {
+      "id": "GOV-002",
+      "name": "Policy enforced before action",
+      "group": "governance",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "policy_source",
+        "enforcement_code_path"
+      ],
+      "evaluation": {
+        "type": "governance",
+        "pass_when": "The policy is evaluated in code before the governed action executes, on every path to that action.",
+        "fail_when": "A path executes the governed action without evaluating the policy, or the policy is only documented."
+      },
+      "blocking": true
+    },
+    {
+      "id": "GOV-003",
+      "name": "Controlled change path",
+      "group": "governance",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "ci_workflow",
+        "branch_protection_export"
+      ],
+      "evaluation": {
+        "type": "governance",
+        "pass_when": "Production deploys run only from a protected branch that requires review and passing checks.",
+        "fail_when": "Production can be deployed from an unprotected branch or without review."
+      },
+      "blocking": false
+    },
+    {
+      "id": "AUD-001",
+      "name": "Immutable audit trail",
+      "group": "auditability",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "audit_storage",
+        "write_protection"
+      ],
+      "evaluation": {
+        "type": "audit",
+        "pass_when": "Audit records are append-only: update and delete are denied for application roles.",
+        "fail_when": "Application roles can update or delete audit records."
+      },
+      "blocking": true
+    },
+    {
+      "id": "AUD-002",
+      "name": "Audit records free of secrets and raw input",
+      "group": "auditability",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "audit_write_code"
+      ],
+      "evaluation": {
+        "type": "audit",
+        "pass_when": "Audit writes store codes, identifiers and hashes, not secrets or raw client-supplied text.",
+        "fail_when": "Audit writes store secrets, tokens or raw client-supplied text."
+      },
+      "blocking": true
+    },
+    {
+      "id": "AUD-003",
+      "name": "Audit integrity",
+      "group": "auditability",
+      "platforms": [
+        "any"
+      ],
+      "required_evidence": [
+        "audit_integrity"
+      ],
+      "evaluation": {
+        "type": "audit",
+        "pass_when": "Audit records carry a hash chain, signature or checksum that is verified.",
+        "fail_when": "An integrity mechanism exists but is not verified or can be bypassed."
+      },
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "validator": "deployment-validator-skill 1.0 (illustrative golden example)",
+  "deployment_profile": "platform",
+  "deployment_platforms": [
+    "docker-compose"
+  ],
+  "deployment_decision": "READY",
+  "operational_readiness": "PASS",
+  "governance_conformance": "NOT_APPLICABLE",
+  "artifact_scope": [
+    "compose.yaml",
+    "prometheus.yml",
+    "grafana/",
+    "migrations/",
+    "api/",
+    "requirements.txt",
+    "uv.lock",
+    ".gitignore",
+    ".github/",
+    "secret-scan.txt"
+  ],
+  "evidence_limitations": [],
+  "controls": [
+    {
+      "id": "RUN-CF-001",
+      "name": "Wrangler config valid",
+      "group": "runtime",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    }
+  ],
+  "critical_findings": [],
+  "non_blocking_findings": []
+}

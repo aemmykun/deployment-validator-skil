@@ -1,0 +1,382 @@
+{
+  "validator": "deployment-validator-skill 1.0 (illustrative golden example)",
+  "deployment_profile": "minimal",
+  "deployment_platforms": [
+    "docker-compose"
+  ],
+  "deployment_decision": "READY_WITH_WARNINGS",
+  "operational_readiness": "FAIL",
+  "governance_conformance": "NOT_APPLICABLE",
+  "artifact_scope": [
+    "compose.yaml",
+    "package.json",
+    "package-lock.json",
+    "config/",
+    ".gitignore",
+    ".github/workflows/ci.yml"
+  ],
+  "evidence_limitations": [
+    "No observability config, health route source, auth config, dependency scanning config or secret scan report supplied."
+  ],
+  "controls": [
+    {
+      "id": "RUN-001",
+      "name": "Deployment target identified",
+      "group": "runtime",
+      "required": true,
+      "blocking": true,
+      "status": "PASS",
+      "evidence": [
+        "compose.yaml \u2014 service web"
+      ],
+      "impact": "If not met: The supplied deployment config does not parse, or it targets a different service or platform than the one being validated.",
+      "recommended_verification": "Re-check: At least one supported platform config is supplied and parses, and it names the service being deployed."
+    },
+    {
+      "id": "RUN-002",
+      "name": "Dependencies locked",
+      "group": "runtime",
+      "required": false,
+      "blocking": false,
+      "status": "PASS",
+      "evidence": [
+        "package.json + package-lock.json"
+      ],
+      "impact": "If not met: A supplied package manifest has no lockfile, or the lockfile is listed in .gitignore.",
+      "recommended_verification": "Re-check: Every supplied package manifest has a matching committed lockfile."
+    },
+    {
+      "id": "RUN-003",
+      "name": "Deploy gated by CI",
+      "group": "runtime",
+      "required": false,
+      "blocking": false,
+      "status": "PASS",
+      "evidence": [
+        ".github/workflows/ci.yml:18 \u2014 deploy needs: [test]"
+      ],
+      "impact": "If not met: The deploy job can run without the build/test jobs succeeding (no needs/if gate, or tests are allowed to fail).",
+      "recommended_verification": "Re-check: The deploy job runs only after build and test jobs succeed."
+    },
+    {
+      "id": "RUN-DOCKER-001",
+      "name": "Compose file valid",
+      "group": "runtime",
+      "required": true,
+      "blocking": true,
+      "status": "PASS",
+      "evidence": [
+        "compose.yaml \u2014 parses; web has build"
+      ],
+      "impact": "If not met: The compose file does not parse, or a service has neither image nor build.",
+      "recommended_verification": "Re-check: The compose file parses and every service has an image or build."
+    },
+    {
+      "id": "RUN-DOCKER-002",
+      "name": "Container images pinned",
+      "group": "runtime",
+      "required": false,
+      "blocking": false,
+      "status": "PASS",
+      "evidence": [
+        "compose.yaml \u2014 node:22.5-alpine"
+      ],
+      "impact": "If not met: An image has no tag or uses the latest tag.",
+      "recommended_verification": "Re-check: Every image reference has an explicit tag other than latest, or a digest."
+    },
+    {
+      "id": "RUN-DOCKER-003",
+      "name": "Container health checks",
+      "group": "runtime",
+      "required": false,
+      "blocking": false,
+      "status": "PASS",
+      "evidence": [
+        "compose.yaml:9 \u2014 healthcheck on web"
+      ],
+      "impact": "If not met: A long-running service has no healthcheck.",
+      "recommended_verification": "Re-check: Every long-running service defines a healthcheck."
+    },
+    {
+      "id": "RUN-CF-001",
+      "name": "Wrangler config valid",
+      "group": "runtime",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "RUN-VERCEL-001",
+      "name": "Vercel build defined",
+      "group": "runtime",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "RUN-FIREBASE-001",
+      "name": "Firebase config valid",
+      "group": "runtime",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "DB-001",
+      "name": "Versioned migrations",
+      "group": "database",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "DB-002",
+      "name": "Database credentials not hard-coded",
+      "group": "database",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "DB-FIREBASE-001",
+      "name": "Firestore rules not open",
+      "group": "database",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "OBS-001",
+      "name": "Logging enabled for the platform",
+      "group": "observability",
+      "required": false,
+      "blocking": true,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: Config explicitly disables logging/telemetry for a deployed service.",
+      "recommended_verification": "Supply: observability_config."
+    },
+    {
+      "id": "OBS-002",
+      "name": "Health endpoint defined",
+      "group": "observability",
+      "required": false,
+      "blocking": false,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: A deployed service has no health or readiness endpoint.",
+      "recommended_verification": "Supply: health_endpoint."
+    },
+    {
+      "id": "OBS-DOCKER-001",
+      "name": "Prometheus monitoring",
+      "group": "observability",
+      "required": false,
+      "blocking": true,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: Prometheus config is supplied but does not target the deployed services.",
+      "recommended_verification": "Supply: prometheus_config."
+    },
+    {
+      "id": "OBS-DOCKER-002",
+      "name": "Grafana monitoring",
+      "group": "observability",
+      "required": false,
+      "blocking": false,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: Grafana provisioning is supplied but has no data source or no dashboard.",
+      "recommended_verification": "Supply: grafana_config."
+    },
+    {
+      "id": "SEC-001",
+      "name": "No committed secrets",
+      "group": "security",
+      "required": false,
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": [
+        "config/settings.js:4 \u2014 STRIPE_KEY = \"[REDACTED]\" (literal live-format key)"
+      ],
+      "impact": "If not met: A literal credential (API key, token, password, private key) appears in a supplied file or the scan reports a finding.",
+      "recommended_verification": "Re-check: A secret scan over the scoped files reports no findings, and no literal credentials appear in the supplied files."
+    },
+    {
+      "id": "SEC-002",
+      "name": "Secrets injected at deploy time",
+      "group": "security",
+      "required": false,
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": [
+        "config/settings.js:4 \u2014 secret set as a literal in committed config, not injected at deploy time"
+      ],
+      "impact": "If not met: Secrets are set as plain config vars in a committed file, or env files with secrets are committed.",
+      "recommended_verification": "Re-check: Secrets are referenced from the platform secret store or environment, and local env files are gitignored."
+    },
+    {
+      "id": "SEC-003",
+      "name": "Authentication enforced",
+      "group": "security",
+      "required": false,
+      "blocking": true,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: A non-public route or tool is reachable without authentication.",
+      "recommended_verification": "Supply: auth_config."
+    },
+    {
+      "id": "SEC-004",
+      "name": "Dependency vulnerability scanning",
+      "group": "security",
+      "required": false,
+      "blocking": false,
+      "status": "UNVERIFIED",
+      "evidence": [],
+      "impact": "If not met: Dependency scanning is configured but disabled or set to never fail.",
+      "recommended_verification": "Supply: dependency_scan_config, ci_workflow."
+    },
+    {
+      "id": "GOV-001",
+      "name": "Fail-closed enforcement",
+      "group": "governance",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "GOV-002",
+      "name": "Policy enforced before action",
+      "group": "governance",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "GOV-003",
+      "name": "Controlled change path",
+      "group": "governance",
+      "required": false,
+      "blocking": false,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "AUD-001",
+      "name": "Immutable audit trail",
+      "group": "auditability",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "AUD-002",
+      "name": "Audit records free of secrets and raw input",
+      "group": "auditability",
+      "required": false,
+      "blocking": true,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    },
+    {
+      "id": "AUD-003",
+      "name": "Audit integrity",
+      "group": "auditability",
+      "required": false,
+      "blocking": false,
+      "status": "NOT_APPLICABLE",
+      "evidence": [],
+      "impact": "Not in scope for this profile or platform.",
+      "recommended_verification": "None for this profile and platform."
+    }
+  ],
+  "critical_findings": [],
+  "non_blocking_findings": [
+    {
+      "control": "SEC-001",
+      "status": "FAIL",
+      "summary": "No committed secrets: evidence shows non-compliance.",
+      "evidence": [
+        "config/settings.js:4 \u2014 STRIPE_KEY = \"[REDACTED]\" (literal live-format key)"
+      ],
+      "recommended_verification": "Re-check: A secret scan over the scoped files reports no findings, and no literal credentials appear in the supplied files."
+    },
+    {
+      "control": "SEC-002",
+      "status": "FAIL",
+      "summary": "Secrets injected at deploy time: evidence shows non-compliance.",
+      "evidence": [
+        "config/settings.js:4 \u2014 secret set as a literal in committed config, not injected at deploy time"
+      ],
+      "recommended_verification": "Re-check: Secrets are referenced from the platform secret store or environment, and local env files are gitignored."
+    },
+    {
+      "control": "OBS-001",
+      "status": "UNVERIFIED",
+      "summary": "Logging enabled for the platform: required evidence was not supplied.",
+      "recommended_verification": "Supply: observability_config."
+    },
+    {
+      "control": "OBS-002",
+      "status": "UNVERIFIED",
+      "summary": "Health endpoint defined: required evidence was not supplied.",
+      "recommended_verification": "Supply: health_endpoint."
+    },
+    {
+      "control": "OBS-DOCKER-001",
+      "status": "UNVERIFIED",
+      "summary": "Prometheus monitoring: required evidence was not supplied.",
+      "recommended_verification": "Supply: prometheus_config."
+    },
+    {
+      "control": "OBS-DOCKER-002",
+      "status": "UNVERIFIED",
+      "summary": "Grafana monitoring: required evidence was not supplied.",
+      "recommended_verification": "Supply: grafana_config."
+    },
+    {
+      "control": "SEC-003",
+      "status": "UNVERIFIED",
+      "summary": "Authentication enforced: required evidence was not supplied.",
+      "recommended_verification": "Supply: auth_config."
+    },
+    {
+      "control": "SEC-004",
+      "status": "UNVERIFIED",
+      "summary": "Dependency vulnerability scanning: required evidence was not supplied.",
+      "recommended_verification": "Supply: dependency_scan_config, ci_workflow."
+    }
+  ]
+}
